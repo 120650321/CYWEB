@@ -17,6 +17,8 @@ const total = ref(0);
 const categories = ref<any[]>([]);
 const uploading = ref(false);
 const uploadPercent = ref(0);
+const fileSource = ref<"upload" | "url">("upload");
+const extUrl = reactive({ name: "", format: "", size: "", url: "" });
 
 const query = reactive({
   page: 1,
@@ -71,8 +73,17 @@ async function fetchCategories() {
   categories.value = res;
 }
 
+function resetExtUrl() {
+  extUrl.name = "";
+  extUrl.format = "";
+  extUrl.size = "";
+  extUrl.url = "";
+}
+
 function openCreate() {
   dialogMode.value = "create";
+  fileSource.value = "upload";
+  resetExtUrl();
   Object.assign(form, {
     name: "",
     category_id: null,
@@ -91,6 +102,8 @@ function openCreate() {
 
 function openEdit(row: any) {
   dialogMode.value = "edit";
+  fileSource.value = "upload";
+  resetExtUrl();
   const files = Array.isArray(row.files) ? row.files.map((f: any) => ({ ...f })) : [];
   Object.assign(form, {
     name: row.name,
@@ -146,6 +159,25 @@ async function onFileChange(e: Event) {
 
 function removeFile(index: number) {
   form.files.splice(index, 1);
+}
+
+function addExtUrl() {
+  if (!extUrl.name.trim()) {
+    ElMessage.warning("请输入文件名称");
+    return;
+  }
+  if (!extUrl.url.trim()) {
+    ElMessage.warning("请输入外部链接地址");
+    return;
+  }
+  form.files.push({
+    name: extUrl.name.trim(),
+    format: extUrl.format.trim() || "URL",
+    size: extUrl.size.trim() || "-",
+    url: extUrl.url.trim(),
+  });
+  resetExtUrl();
+  ElMessage.success("已添加外部链接");
 }
 
 const editingId = ref<number | null>(null);
@@ -343,12 +375,40 @@ onMounted(() => {
               </div>
               <el-button link type="danger" @click="removeFile(i)">移除</el-button>
             </div>
-            <div v-if="!form.files.length" class="file-editor__empty">暂无文件，请上传资料文件</div>
-            <el-button type="primary" plain :loading="uploading" @click="pickFile">
-              <el-icon><Upload /></el-icon>{{ uploading ? "上传中..." : "上传文件" }}
-            </el-button>
-            <el-progress v-if="uploading" :percentage="uploadPercent" :stroke-width="6" style="margin-top:8px" />
-            <input :id="fileInputId" ref="fileInput" type="file" :accept="fileAccept" style="position:fixed;top:-9999px;left:-9999px" @change="onFileChange" />
+            <div v-if="!form.files.length" class="file-editor__empty">暂无文件，请上传资料文件或添加外部链接</div>
+
+            <el-radio-group v-model="fileSource" class="file-source-switch">
+              <el-radio-button value="upload">本地上传</el-radio-button>
+              <el-radio-button value="url">外部链接</el-radio-button>
+            </el-radio-group>
+
+            <template v-if="fileSource === 'upload'">
+              <el-button type="primary" plain :loading="uploading" @click="pickFile" style="margin-top:10px">
+                <el-icon><Upload /></el-icon>{{ uploading ? "上传中..." : "上传文件" }}
+              </el-button>
+              <el-progress v-if="uploading" :percentage="uploadPercent" :stroke-width="6" style="margin-top:8px" />
+              <input :id="fileInputId" ref="fileInput" type="file" :accept="fileAccept" style="position:fixed;top:-9999px;left:-9999px" @change="onFileChange" />
+            </template>
+
+            <template v-else>
+              <div class="ext-url-form">
+                <el-input v-model="extUrl.name" placeholder="文件名称，如：工程项目管理手册.pdf" style="margin-bottom:8px" />
+                <el-row :gutter="8">
+                  <el-col :span="8">
+                    <el-input v-model="extUrl.format" placeholder="格式，如：PDF" />
+                  </el-col>
+                  <el-col :span="8">
+                    <el-input v-model="extUrl.size" placeholder="大小，如：10 MB" />
+                  </el-col>
+                  <el-col :span="8">
+                    <el-button type="success" plain @click="addExtUrl" style="width:100%">
+                      <el-icon><Plus /></el-icon>添加
+                    </el-button>
+                  </el-col>
+                </el-row>
+                <el-input v-model="extUrl.url" placeholder="外部链接地址，如：https://example.com/file.pdf" style="margin-top:8px" />
+              </div>
+            </template>
           </div>
         </el-form-item>
 
