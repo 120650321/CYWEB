@@ -1,0 +1,128 @@
+diff -urN --label admin/src/views/Downloads.vue --label admin/src/views/Downloads.vue admin/src/views/Downloads.vue admin/src/views/Downloads.vue
+--- admin/src/views/Downloads.vue
++++ admin/src/views/Downloads.vue
+@@ -1,4 +1,4 @@
+-import { api } from "@/api";
++import { api, http } from "@/api";
+ 
+@@ -46,7 +46,10 @@
+ };
+ 
+ const fileInput = ref<HTMLInputElement>();
++const fileInputId = "download-file-input-" + Math.random().toString(36).slice(2, 8);
+ 
++const fileAccept = ".pdf,.zip,.rar,.7z,.exe,.img,.iso,.doc,.docx,.xls,.xlsx,.txt,.tar,.gz,.apk,.bin,.fw";
++
+ async function fetchList() {
+   loading.value = true;
+   try {
+@@ -104,8 +107,41 @@
+ }
+ 
+ function pickFile() {
+-  fileInput.value?.click();
++  const el = fileInput.value || document.getElementById(fileInputId) as HTMLInputElement;
++  if (!el) {
++    console.error("[文件上传] 文件输入元素未就绪");
++    ElMessage.warning("文件上传组件未就绪，请关闭弹窗后重试");
++    return;
++  }
++  el.value = "";
++  el.click();
+ }
+ 
+ async function onFileChange(e: Event) {
+@@ -121,8 +157,9 @@
+     const format = (file.name.split(".").pop() || "file").toUpperCase();
+     form.files.push({ name: file.name, format, size: sizeText, url });
+     ElMessage.success("文件上传成功");
+-  } catch {
+-    ElMessage.error("文件上传失败");
++  } catch (e: any) {
++    console.error("[文件上传失败]", e);
++    ElMessage.error(e?.message || "文件上传失败，请重试");
+   } finally {
+     uploading.value = false;
+   }
+@@ -128,7 +165,7 @@
+     form.files.push({ name: file.name, format, size: sizeText, url });
+     ElMessage.success("文件上传成功");
+   } catch (e: any) {
+-    const res = await api.upload(file, "file");
++    const res = await http.upload(file, "file");
+     const url = res.url;
+     const sizeText =
+@@ -337,7 +374,7 @@
+             <el-button type="primary" plain :loading="uploading" @click="pickFile">
+               <el-icon><Upload /></el-icon>{{ uploading ? "上传中..." : "上传文件" }}
+             </el-button>
+-            <input ref="fileInput" type="file" hidden @change="onFileChange" />
++            <input :id="fileInputId" ref="fileInput" type="file" :accept="fileAccept" style="position:fixed;top:-9999px;left:-9999px" @change="onFileChange" />
+           </div>
+         </el-form-item>
+ 
+diff -urN --label admin/src/views/Articles.vue --label admin/src/views/Articles.vue admin/src/views/Articles.vue admin/src/views/Articles.vue
+--- admin/src/views/Articles.vue
++++ admin/src/views/Articles.vue
+@@ -1,4 +1,4 @@
+-import { api } from "@/api";
++import { api, http } from "@/api";
+ 
+@@ -42,6 +42,7 @@
+ };
+ 
+ const coverInput = ref<HTMLInputElement>();
++const coverInputId = "article-cover-input-" + Math.random().toString(36).slice(2, 8);
+ const tagInput = ref("");
+ const editingId = ref<number | null>(null);
+ 
+@@ -101,7 +102,15 @@
+ }
+ 
+ function pickCover() {
+-  coverInput.value?.click();
++  const el = coverInput.value || document.getElementById(coverInputId) as HTMLInputElement;
++  if (!el) {
++    ElMessage.warning("上传组件未就绪");
++    return;
++  }
++  el.value = "";
++  el.click();
+ }
+ 
+ async function onCoverChange(e: Event) {
+@@ -120,7 +129,7 @@
+     form.cover = res.url;
+     ElMessage.success("封面上传成功");
+   } catch {
+-    const res = await api.upload(file, "image");
++    const res = await http.upload(file, "image");
+     form.cover = res.url;
+     ElMessage.success("封面上传成功");
+@@ -302,7 +311,7 @@
+               <el-icon><Picture /></el-icon>
+               <span>点击上传封面</span>
+             </div>
+-            <input ref="coverInput" type="file" accept="image/*" hidden @change="onCoverChange" />
++            <input :id="coverInputId" ref="coverInput" type="file" accept="image/*" style="position:fixed;top:-9999px;left:-9999px" @change="onCoverChange" />
+           </div>
+         </el-form-item>
+ 
+diff -urN --label admin/src/styles/index.css --label admin/src/styles/index.css admin/src/styles/index.css admin/src/styles/index.css
+--- admin/src/styles/index.css
++++ admin/src/styles/index.css
+@@ -22,3 +22,14 @@
+ a { color: inherit; text-decoration: none; }
+ .num { font-family: "DIN Alternate","Bahnschrift","Roboto",sans-serif; font-weight: 700; }
+ 
++.visually-hidden {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}

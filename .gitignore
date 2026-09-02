@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+.env.local
+server/data/*.sqlite
+server/data/*.sqlite-journal
+server/uploads/*
+!server/uploads/.gitkeep
+design_assets/unpacked/
+design_assets/plan.md
+design_assets/plan.txt
+design_assets/extract_plan.py
+.idea/
+.vscode/
+*.tsbuildinfo
