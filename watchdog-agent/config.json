@@ -3,6 +3,10 @@
   "host_name": "生产服务器",
   "server_url": "http://your-server:3000/api/watchdog",
   "report_interval": 30,
+  "auto_detect": true,
+  "auto_detect_interval": 300,
+  "system_info_interval": 60,
+  "auto_detect_targets": ["node", "mysql", "nginx"],
   "processes": [
     {
       "name": "node",

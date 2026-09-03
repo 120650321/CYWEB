@@ -43,6 +43,48 @@
     .event-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
     .event-pagination { display: flex; justify-content: center; margin-top: 12px; }
     .footer { text-align: center; padding: 16px; color: #909399; font-size: 12px; }
+.resource-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.resource-card { background: #fafbfc; border: 1px solid #e4e7ed; border-radius: 8px; padding: 16px; }
+.resource-card__title { font-size: 12px; color: #909399; margin-bottom: 8px; }
+.resource-card__value { font-size: 28px; font-weight: 700; color: #303133; margin-bottom: 8px; }
+.resource-card__sub { font-size: 11px; color: #909399; }
+.resource-card__progress { margin-top: 4px; }
+.sysinfo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.sysinfo-item { background: #fafbfc; border: 1px solid #e4e7ed; border-radius: 6px; padding: 12px; }
+.sysinfo-item__label { font-size: 11px; color: #909399; }
+.sysinfo-item__value { font-size: 16px; font-weight: 600; color: #303133; }
+.proc-search { margin-bottom: 12px; }
+.tab-header { display: flex; gap: 0; border-bottom: 2px solid #e4e7ed; margin-bottom: 16px; }
+.tab-btn { padding: 8px 20px; cursor: pointer; border: none; background: none; font-size: 14px; color: #606266; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
+.tab-btn:hover { color: #409eff; }
+.tab-btn.active { color: #409eff; border-bottom-color: #409eff; font-weight: 600; }
+/* 进程列表 - 任务管理器风格 */
+.proc-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.proc-summary-item { background: #f5f7fa; border-radius: 6px; padding: 12px 14px; text-align: center; }
+.proc-summary-item__label { font-size: 11px; color: #909399; margin-bottom: 4px; }
+.proc-summary-item__value { font-size: 22px; font-weight: 700; color: #303133; }
+.proc-summary-item__value.warn { color: #e6a23c; }
+.proc-summary-item__value.danger { color: #f56c6c; }
+.proc-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; }
+.proc-group { margin-bottom: 8px; }
+.proc-group__header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f5f7fa; border-radius: 6px; cursor: pointer; user-select: none; font-size: 13px; font-weight: 600; color: #303133; }
+.proc-group__header:hover { background: #e8eaed; }
+.proc-group__header .arrow { transition: transform .2s; font-size: 10px; color: #909399; }
+.proc-group__header .arrow.expanded { transform: rotate(90deg); }
+.proc-group__count { font-size: 11px; color: #909399; font-weight: 400; margin-left: 4px; }
+.proc-bar { position: relative; width: 100%; height: 18px; background: #ebeef5; border-radius: 3px; overflow: hidden; }
+.proc-bar__fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; transition: width .3s; }
+.proc-bar__fill.low { background: #67c23a; }
+.proc-bar__fill.medium { background: #e6a23c; }
+.proc-bar__fill.high { background: #f56c6c; }
+.proc-bar__text { position: absolute; left: 4px; top: 0; line-height: 18px; font-size: 11px; font-weight: 600; color: #303133; z-index: 1; }
+.proc-kill-btn { font-size: 11px; padding: 2px 8px; }
+.proc-status { font-size: 11px; }
+.proc-status.running { color: #67c23a; }
+.proc-status.sleeping { color: #909399; }
+.proc-status.stopped { color: #e6a23c; }
+.proc-status.zombie { color: #f56c6c; }
+.el-table .row-high { background-color: #fef0f0 !important; }
   </style>
 </head>
 <body>
@@ -75,68 +117,222 @@
 
         <div class="detail-panel">
           <template v-if="selectedHost">
-            <div class="process-cards">
-              <div v-for="cfg in hostConfigs" :key="cfg.process_name" class="process-card" :class="{ disabled: !cfg.enabled }">
-                <div class="process-card__head">
-                  <span class="process-card__name">{{ cfg.process_display }}</span>
-                  <el-switch :model-value="!!cfg.enabled" size="small" disabled />
-                </div>
-                <div class="process-card__body">
-                  <div class="process-card__row"><span>检测间隔</span><span>{{ cfg.check_interval }}s</span></div>
-                  <div class="process-card__row"><span>重启阈值</span><span>{{ cfg.max_restart }}次/{{ cfg.restart_window }}s</span></div>
-                  <div class="process-card__row"><span>启动命令</span><span class="process-card__cmd">{{ cfg.start_command }}</span></div>
-                </div>
-              </div>
-              <div v-if="!hostConfigs.length" class="process-empty">暂无进程配置</div>
+            <div class="tab-header">
+              <button class="tab-btn" :class="{ active: activeTab === 'monitor' }" @click="activeTab = 'monitor'">进程监控</button>
+              <button class="tab-btn" :class="{ active: activeTab === 'resources' }" @click="switchTab('resources')">系统资源</button>
+              <button class="tab-btn" :class="{ active: activeTab === 'processes' }" @click="switchTab('processes')">进程列表</button>
             </div>
 
-            <div class="event-section">
-              <h3>事件日志</h3>
-              <div class="event-filters">
-                <el-select v-model="filters.process_name" placeholder="进程" clearable size="small" style="width:120px" @change="fetchEvents">
-                  <el-option label="全部" value="" />
-                  <el-option v-for="cfg in hostConfigs" :key="cfg.process_name" :label="cfg.process_display" :value="cfg.process_name" />
-                </el-select>
-                <el-select v-model="filters.event_type" placeholder="事件类型" clearable size="small" style="width:120px" @change="fetchEvents">
-                  <el-option label="全部" value="" />
-                  <el-option label="进程检测" value="check" />
-                  <el-option label="进程重启" value="restart" />
-                  <el-option label="异常告警" value="alert" />
-                  <el-option label="状态变更" value="status" />
-                  <el-option label="心跳上报" value="heartbeat" />
-                </el-select>
-                <el-select v-model="filters.level" placeholder="级别" clearable size="small" style="width:100px" @change="fetchEvents">
-                  <el-option label="全部" value="" />
-                  <el-option label="信息" value="info" />
-                  <el-option label="警告" value="warn" />
-                  <el-option label="错误" value="error" />
-                  <el-option label="严重" value="critical" />
-                </el-select>
-                <el-date-picker v-model="filters.start_date" type="datetime" placeholder="开始时间" size="small" format="YYYY-MM-DD HH:mm:ss" value-format="YYYY-MM-DD HH:mm:ss" style="width:180px" @change="fetchEvents" />
-                <el-date-picker v-model="filters.end_date" type="datetime" placeholder="结束时间" size="small" format="YYYY-MM-DD HH:mm:ss" value-format="YYYY-MM-DD HH:mm:ss" style="width:180px" @change="fetchEvents" />
+            <div v-show="activeTab === 'monitor'">
+              <div class="process-cards">
+                <div v-for="cfg in hostConfigs" :key="cfg.process_name" class="process-card" :class="{ disabled: !cfg.enabled }">
+                  <div class="process-card__head">
+                    <span class="process-card__name">{{ cfg.process_display }}</span>
+                    <el-switch :model-value="!!cfg.enabled" size="small" disabled />
+                  </div>
+                  <div class="process-card__body">
+                    <div class="process-card__row"><span>检测间隔</span><span>{{ cfg.check_interval }}s</span></div>
+                    <div class="process-card__row"><span>重启阈值</span><span>{{ cfg.max_restart }}次/{{ cfg.restart_window }}s</span></div>
+                    <div class="process-card__row"><span>启动命令</span><span class="process-card__cmd">{{ cfg.start_command }}</span></div>
+                  </div>
+                </div>
+                <div v-if="!hostConfigs.length" class="process-empty">暂无进程配置</div>
               </div>
 
-              <el-table :data="events" v-loading="loading" size="small" stripe empty-text="暂无事件日志">
-                <el-table-column prop="created_at" label="时间" width="160">
-                  <template #default="{ row }">{{ row.created_at?.replace('T',' ').slice(0,19) || '-' }}</template>
-                </el-table-column>
-                <el-table-column prop="process_name" label="进程" width="90" />
-                <el-table-column prop="event_type" label="事件类型" width="100">
-                  <template #default="{ row }">{{ typeLabel(row.event_type) }}</template>
-                </el-table-column>
-                <el-table-column prop="level" label="级别" width="70">
-                  <template #default="{ row }">
-                    <el-tag :type="levelTag(row.level)" size="small">{{ levelLabel(row.level) }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="message" label="内容" min-width="200" show-overflow-tooltip />
-                <el-table-column prop="cpu_percent" label="CPU%" width="65" />
-                <el-table-column prop="mem_mb" label="内存MB" width="85" />
-                <el-table-column prop="restart_count" label="重启次数" width="85" />
-              </el-table>
+              <div class="event-section">
+                <h3>事件日志</h3>
+                <div class="event-filters">
+                  <el-select v-model="filters.process_name" placeholder="进程" clearable size="small" style="width:120px" @change="fetchEvents">
+                    <el-option label="全部" value="" />
+                    <el-option v-for="cfg in hostConfigs" :key="cfg.process_name" :label="cfg.process_display" :value="cfg.process_name" />
+                  </el-select>
+                  <el-select v-model="filters.event_type" placeholder="事件类型" clearable size="small" style="width:120px" @change="fetchEvents">
+                    <el-option label="全部" value="" />
+                    <el-option label="进程检测" value="check" />
+                    <el-option label="进程重启" value="restart" />
+                    <el-option label="异常告警" value="alert" />
+                    <el-option label="状态变更" value="status" />
+                    <el-option label="心跳上报" value="heartbeat" />
+                  </el-select>
+                  <el-select v-model="filters.level" placeholder="级别" clearable size="small" style="width:100px" @change="fetchEvents">
+                    <el-option label="全部" value="" />
+                    <el-option label="信息" value="info" />
+                    <el-option label="警告" value="warn" />
+                    <el-option label="错误" value="error" />
+                    <el-option label="严重" value="critical" />
+                  </el-select>
+                  <el-date-picker v-model="filters.start_date" type="datetime" placeholder="开始时间" size="small" format="YYYY-MM-DD HH:mm:ss" value-format="YYYY-MM-DD HH:mm:ss" style="width:180px" @change="fetchEvents" />
+                  <el-date-picker v-model="filters.end_date" type="datetime" placeholder="结束时间" size="small" format="YYYY-MM-DD HH:mm:ss" value-format="YYYY-MM-DD HH:mm:ss" style="width:180px" @change="fetchEvents" />
+                </div>
 
-              <div v-if="eventsTotal > filters.size" class="event-pagination">
-                <el-pagination v-model:current-page="filters.page" :page-size="filters.size" :total="eventsTotal" layout="prev, pager, next" small @current-change="fetchEvents" />
+                <el-table :data="events" v-loading="loading" size="small" stripe empty-text="暂无事件日志">
+                  <el-table-column prop="created_at" label="时间" width="160">
+                    <template #default="{ row }">{{ row.created_at?.replace('T',' ').slice(0,19) || '-' }}</template>
+                  </el-table-column>
+                  <el-table-column prop="process_name" label="进程" width="90" />
+                  <el-table-column prop="event_type" label="事件类型" width="100">
+                    <template #default="{ row }">{{ typeLabel(row.event_type) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="level" label="级别" width="70">
+                    <template #default="{ row }">
+                      <el-tag :type="levelTag(row.level)" size="small">{{ levelLabel(row.level) }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="message" label="内容" min-width="200" show-overflow-tooltip />
+                  <el-table-column prop="cpu_percent" label="CPU%" width="65" />
+                  <el-table-column prop="mem_mb" label="内存MB" width="85" />
+                  <el-table-column prop="restart_count" label="重启次数" width="85" />
+                </el-table>
+
+                <div v-if="eventsTotal > filters.size" class="event-pagination">
+                  <el-pagination v-model:current-page="filters.page" :page-size="filters.size" :total="eventsTotal" layout="prev, pager, next" small @current-change="fetchEvents" />
+                </div>
+              </div>
+            </div>
+
+            <div v-show="activeTab === 'resources'">
+              <h3 style="margin-bottom:16px;font-size:14px;font-weight:600;">系统资源占用</h3>
+              <div class="resource-cards">
+                <div class="resource-card">
+                  <div class="resource-card__title">CPU 使用率</div>
+                  <div class="resource-card__value">{{ sysinfo.cpu_usage || '0' }}%</div>
+                  <div class="resource-card__progress">
+                    <el-progress :percentage="Number(sysinfo.cpu_usage || 0)" :status="Number(sysinfo.cpu_usage) > 80 ? 'exception' : ''" :stroke-width="8" />
+                  </div>
+                </div>
+                <div class="resource-card">
+                  <div class="resource-card__title">内存使用率</div>
+                  <div class="resource-card__value">{{ sysinfo.mem_percent || '0' }}%</div>
+                  <div class="resource-card__sub">已用 {{ formatSize(sysinfo.mem_used || 0) }} / 总计 {{ formatSize(sysinfo.mem_total || 0) }}</div>
+                  <div class="resource-card__progress">
+                    <el-progress :percentage="Number(sysinfo.mem_percent || 0)" :status="Number(sysinfo.mem_percent) > 80 ? 'exception' : ''" :stroke-width="8" />
+                  </div>
+                </div>
+                <div class="resource-card">
+                  <div class="resource-card__title">磁盘使用率</div>
+                  <div class="resource-card__value">{{ sysinfo.disk_percent || '0' }}%</div>
+                  <div class="resource-card__sub">已用 {{ formatSize(sysinfo.disk_used || 0) }} / 总计 {{ formatSize(sysinfo.disk_total || 0) }}</div>
+                  <div class="resource-card__progress">
+                    <el-progress :percentage="Number(sysinfo.disk_percent || 0)" :status="Number(sysinfo.disk_percent) > 80 ? 'exception' : ''" :stroke-width="8" />
+                  </div>
+                </div>
+                <div class="resource-card">
+                  <div class="resource-card__title">系统负载</div>
+                  <div class="resource-card__value">{{ sysinfo.load_1 || '0' }}</div>
+                  <div class="resource-card__sub">1min / 5min / 15min: {{ sysinfo.load_1 || '-' }} / {{ sysinfo.load_5 || '-' }} / {{ sysinfo.load_15 || '-' }}</div>
+                </div>
+              </div>
+              <div class="sysinfo-grid">
+                <div class="sysinfo-item">
+                  <div class="sysinfo-item__label">运行时长</div>
+                  <div class="sysinfo-item__value">{{ formatUptime(sysinfo.uptime) }}</div>
+                </div>
+                <div class="sysinfo-item">
+                  <div class="sysinfo-item__label">网络接收</div>
+                  <div class="sysinfo-item__value">{{ formatSize(sysinfo.net_rx || 0) }}</div>
+                </div>
+                <div class="sysinfo-item">
+                  <div class="sysinfo-item__label">数据更新时间</div>
+                  <div class="sysinfo-item__value" style="font-size:12px;">{{ sysinfo.created_at ? sysinfo.created_at.replace('T',' ').slice(0,19) : '暂无' }}</div>
+                </div>
+                <div class="sysinfo-item">
+                  <div class="sysinfo-item__label">网络发送</div>
+                  <div class="sysinfo-item__value">{{ formatSize(sysinfo.net_tx || 0) }}</div>
+                </div>
+              </div>
+
+              <h3 style="margin-bottom:12px;font-size:14px;font-weight:600;">资源历史趋势</h3>
+              <div style="background:#fafbfc;border:1px solid #e4e7ed;border-radius:8px;padding:16px;">
+                <div v-for="(item, idx) in sysinfoHistory" :key="idx" style="display:flex;align-items:center;gap:12px;padding:4px 0;font-size:12px;">
+                  <span style="width:130px;color:#909399;">{{ item.created_at?.replace('T',' ').slice(0,16) || '-' }}</span>
+                  <span style="width:80px;">CPU: {{ item.cpu_usage }}%</span>
+                  <span style="width:80px;">MEM: {{ item.mem_percent }}%</span>
+                  <span style="width:80px;">DISK: {{ item.disk_percent }}%</span>
+                  <span>Load: {{ item.load_1 }}</span>
+                </div>
+                <div v-if="!sysinfoHistory.length" style="text-align:center;color:#909399;padding:20px;">暂无历史数据</div>
+              </div>
+            </div>
+
+            <div v-show="activeTab === 'processes'">
+              <div class="proc-summary">
+                <div class="proc-summary-item">
+                  <div class="proc-summary-item__label">进程总数</div>
+                  <div class="proc-summary-item__value">{{ processes.length }}</div>
+                </div>
+                <div class="proc-summary-item">
+                  <div class="proc-summary-item__label">CPU 使用率</div>
+                  <div class="proc-summary-item__value" :class="{ warn: sysinfo.cpu_usage > 50, danger: sysinfo.cpu_usage > 80 }">{{ sysinfo.cpu_usage || '0' }}%</div>
+                </div>
+                <div class="proc-summary-item">
+                  <div class="proc-summary-item__label">内存使用率</div>
+                  <div class="proc-summary-item__value" :class="{ warn: sysinfo.mem_percent > 50, danger: sysinfo.mem_percent > 80 }">{{ sysinfo.mem_percent || '0' }}%</div>
+                </div>
+                <div class="proc-summary-item">
+                  <div class="proc-summary-item__label">系统负载</div>
+                  <div class="proc-summary-item__value">{{ sysinfo.load_1 || '0' }}</div>
+                </div>
+              </div>
+
+              <div class="proc-toolbar">
+                <el-input v-model="procSearch" placeholder="搜索进程名、PID 或用户..." size="small" clearable style="width:300px;" prefix-icon="Search" />
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:11px;color:#909399;">更新: {{ procUpdateTime || '暂无' }}</span>
+                  <el-button size="small" @click="fetchProcesses" :loading="procLoading" :icon="'Refresh'">刷新</el-button>
+                </div>
+              </div>
+
+              <div class="proc-group" v-for="group in processGroups" :key="group.key">
+                <div class="proc-group__header" @click="group.expanded = !group.expanded">
+                  <span class="arrow" :class="{ expanded: group.expanded }">&#9654;</span>
+                  <span>{{ group.label }}</span>
+                  <span class="proc-group__count">({{ group.processes.length }})</span>
+                </div>
+                <div v-show="group.expanded">
+                  <el-table :data="group.processes" size="small" stripe empty-text="暂无进程" max-height="400" :row-class-name="tableRowClass">
+                    <el-table-column label="名称" min-width="180" show-overflow-tooltip>
+                      <template #default="scope">
+                        <span style="font-size:12px;font-weight:500;">{{ scope.row.command || scope.row.name }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="pid" label="PID" width="70" sortable />
+                    <el-table-column label="状态" width="70">
+                      <template #default="scope">
+                        <span :class="'proc-status ' + statusClass(scope.row.stat)">{{ scope.row.stat || '-' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="CPU" width="120" sortable prop="cpu">
+                      <template #default="scope">
+                        <div class="proc-bar">
+                          <div class="proc-bar__fill" :class="barClass(scope.row.cpu)" :style="{ width: Math.min(scope.row.cpu || 0, 100) + '%' }"></div>
+                          <span class="proc-bar__text">{{ (scope.row.cpu || 0).toFixed(1) }}%</span>
+                        </div>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="内存" width="120" sortable prop="mem">
+                      <template #default="scope">
+                        <div class="proc-bar">
+                          <div class="proc-bar__fill" :class="barClass(scope.row.mem)" :style="{ width: Math.min(scope.row.mem || 0, 100) + '%' }"></div>
+                          <span class="proc-bar__text">{{ (scope.row.mem || 0).toFixed(1) }}%</span>
+                        </div>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="物理内存" width="100">
+                      <template #default="scope">
+                        <span style="font-size:12px;">{{ formatKB(scope.row.rss) }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="80" fixed="right">
+                      <template #default="scope">
+                        <el-popconfirm title="确定要终止该进程吗？" confirm-button-text="确定" cancel-button-text="取消" @confirm="killProcess(scope.row.pid)">
+                          <template #reference>
+                            <el-button type="danger" size="small" class="proc-kill-btn" plain>结束进程</el-button>
+                          </template>
+                        </el-popconfirm>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
               </div>
             </div>
           </template>
@@ -165,6 +361,37 @@
         const autoRefresh = ref(true);
         let timer = null;
 
+        const activeTab = ref("monitor");
+        const sysinfo = ref({});
+        const sysinfoHistory = ref([]);
+        const processes = ref([]);
+        const procLoading = ref(false);
+        const procSearch = ref("");
+        const procUpdateTime = ref("");
+        const procTimer = ref(null);
+
+        const SYS_USERS = /^(root|systemd\+|syslog|message\+|daemon|bin|sync|games|man|lp|mail|news|uucp|proxy|www-data|backup|list|irc|gnats|nobody|_apt|systemd-|dbus|polkitd|ntp|tss|sssd|chrony|rpc|rpcuser|nfsnobody|tcpdump|mysql|postgres|redis|nginx)$/;
+
+        const filteredProcesses = Vue.computed(() => {
+          if (!procSearch.value) return processes.value;
+          const kw = procSearch.value.toLowerCase();
+          return processes.value.filter(p =>
+            (p.command || "").toLowerCase().includes(kw) ||
+            String(p.pid).includes(kw) ||
+            (p.user || "").toLowerCase().includes(kw)
+          );
+        });
+
+        const processGroups = Vue.computed(() => {
+          const list = filteredProcesses.value;
+          const sys = list.filter(p => SYS_USERS.test(p.user || ""));
+          const usr = list.filter(p => !SYS_USERS.test(p.user || ""));
+          const groups = [];
+          if (sys.length) groups.push({ key: "system", label: "系统进程", processes: sys, expanded: true });
+          if (usr.length) groups.push({ key: "user", label: "用户进程", processes: usr, expanded: true });
+          return groups;
+        });
+
         const filters = reactive({
           page: 1, size: 20, host_id: "", process_name: "",
           event_type: "", level: "", start_date: "", end_date: "",
@@ -183,11 +410,132 @@
           selectedHost.value = h;
           filters.host_id = h.host_id;
           filters.page = 1;
+          activeTab.value = "monitor";
           try {
             const res = await fetch(API + "/hosts/" + h.host_id + "/config");
             hostConfigs.value = (await res.json()).data || [];
           } catch { hostConfigs.value = []; }
           fetchEvents();
+          fetchSysInfo();
+        }
+
+        async function fetchSysInfo() {
+          if (!selectedHost.value) return;
+          try {
+            const res = await fetch(API + "/sysinfo/" + selectedHost.value.host_id);
+            const data = (await res.json()).data;
+            if (data) sysinfo.value = data;
+          } catch {}
+        }
+
+        async function fetchSysInfoHistory() {
+          if (!selectedHost.value) return;
+          try {
+            const res = await fetch(API + "/sysinfo/" + selectedHost.value.host_id + "/history?limit=30");
+            sysinfoHistory.value = (await res.json()).data || [];
+          } catch {}
+        }
+
+        async function fetchProcesses() {
+          if (!selectedHost.value) return;
+          procLoading.value = true;
+          try {
+            const res = await fetch(API + "/processes/" + selectedHost.value.host_id);
+            const data = (await res.json()).data || [];
+            processes.value = data;
+            procUpdateTime.value = new Date().toLocaleString();
+          } catch {
+            processes.value = [];
+          } finally {
+            procLoading.value = false;
+          }
+        }
+
+        function switchTab(tab) {
+          activeTab.value = tab;
+          if (tab === "resources") {
+            fetchSysInfo();
+            fetchSysInfoHistory();
+          } else if (tab === "processes") {
+            fetchSysInfo();
+            fetchProcesses();
+            startProcRefresh();
+          } else {
+            stopProcRefresh();
+          }
+        }
+
+        function startProcRefresh() {
+          stopProcRefresh();
+          procTimer.value = setInterval(() => {
+            fetchProcesses();
+            fetchSysInfo();
+          }, 12000);
+        }
+        function stopProcRefresh() {
+          if (procTimer.value) { clearInterval(procTimer.value); procTimer.value = null; }
+        }
+
+        async function killProcess(pid) {
+          if (!selectedHost.value) return;
+          try {
+            const res = await fetch(API + "/processes/" + selectedHost.value.host_id + "/kill", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pid }),
+            });
+            const json = await res.json();
+            if (json.code === 0) {
+              ElMessage.success("进程 " + pid + " 已终止");
+              fetchProcesses();
+            } else {
+              ElMessage.error(json.message || "终止失败");
+            }
+          } catch {
+            ElMessage.error("请求失败");
+          }
+        }
+
+        function barClass(val) {
+          if (val >= 70) return "high";
+          if (val >= 30) return "medium";
+          return "low";
+        }
+        function statusClass(stat) {
+          if (!stat) return "";
+          const s = stat[0];
+          if (s === "R") return "running";
+          if (s === "S" || s === "D" || s === "I") return "sleeping";
+          if (s === "T") return "stopped";
+          if (s === "Z") return "zombie";
+          return "";
+        }
+        function tableRowClass({ row }) {
+          if (row && row.cpu >= 70) return "row-high";
+          return "";
+        }
+
+        function formatSize(mb) {
+          if (!mb || mb <= 0) return "0 MB";
+          if (mb >= 1024) return (mb / 1024).toFixed(1) + " GB";
+          return Math.round(mb) + " MB";
+        }
+
+        function formatKB(kb) {
+          if (!kb || kb <= 0) return "0 KB";
+          if (kb >= 1048576) return (kb / 1048576).toFixed(1) + " GB";
+          if (kb >= 1024) return (kb / 1024).toFixed(1) + " MB";
+          return Math.round(kb) + " KB";
+        }
+
+        function formatUptime(sec) {
+          if (!sec || sec <= 0) return "暂无";
+          const d = Math.floor(sec / 86400);
+          const h = Math.floor((sec % 86400) / 3600);
+          const m = Math.floor((sec % 3600) / 60);
+          if (d > 0) return d + "天 " + h + "小时 " + m + "分钟";
+          if (h > 0) return h + "小时 " + m + "分钟";
+          return m + "分钟";
         }
 
         async function fetchEvents() {
@@ -246,11 +594,14 @@
         }
 
         onMounted(() => { fetchHosts(); startRefresh(); });
-        onUnmounted(() => stopRefresh());
+        onUnmounted(() => { stopRefresh(); stopProcRefresh(); });
 
         return {
           hosts, selectedHost, hostConfigs, events, eventsTotal, loading, autoRefresh, filters,
-          fetchHosts, selectHost, fetchEvents, isOnline, timeAgo, typeLabel, levelTag, levelLabel, toggleRefresh,
+          activeTab, sysinfo, sysinfoHistory, processes, procLoading, procSearch, procUpdateTime, filteredProcesses, processGroups,
+          fetchHosts, selectHost, fetchEvents, fetchSysInfo, fetchSysInfoHistory, fetchProcesses, switchTab,
+          killProcess, barClass, statusClass, tableRowClass,
+          isOnline, timeAgo, typeLabel, levelTag, levelLabel, toggleRefresh, formatSize, formatKB, formatUptime,
         };
       }
     }).use(ElementPlus).mount("#app");

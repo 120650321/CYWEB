@@ -9,8 +9,22 @@ import { initDb, dbConnected } from "./db.js";
 import publicRoutes from "./routes/public.js";
 import adminRoutes from "./routes/admin.js";
 import uploadRoutes from "./routes/upload.js";
-import watchdogRoutes from "./routes/watchdog.js";
 import { fail } from "./utils.js";
+
+// watchdog 模块可选加载，不存在时跳过
+let watchdogRoutes = null;
+try {
+  const watchdogModule = await import("./routes/watchdog.js");
+  watchdogRoutes = watchdogModule.default;
+} catch {
+  console.warn("[server] watchdog 模块未找到，跳过看门狗功能");
+}
+
+// 全局异常捕获，防止进程因未捕获异常而崩溃
+process.on("uncaughtException", (err) => { console.error("[uncaughtException]", err); });
+process.on("unhandledRejection", (reason) => { console.error("[unhandledRejection]", reason); });
+process.on("SIGTERM", () => { console.log("[server] SIGTERM"); process.exit(0); });
+process.on("SIGINT", () => { console.log("[server] SIGINT"); process.exit(0); });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -76,7 +90,9 @@ app.use(
 app.use("/api/public", publicRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
-app.use("/api/watchdog", watchdogRoutes);
+if (watchdogRoutes) {
+  app.use("/api/watchdog", watchdogRoutes);
+}
 
 // 健康检查
 app.get("/api/health", (req, res) => {

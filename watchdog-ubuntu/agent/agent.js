@@ -20,6 +20,8 @@ const LOG_DIR = path.join(__dirname, "..", "logs");
 fs.mkdirSync(LOG_DIR, { recursive: true });
 
 const restartCounters = {};
+let lastSysReportTime = 0;
+const SYS_REPORT_INTERVAL = 12;
 
 function getLogFile() {
   const d = new Date();
@@ -46,6 +48,129 @@ function getLocalIP() {
     }
   }
   return "127.0.0.1";
+}
+
+async function collectSysInfo() {
+  try {
+    let cpu = 0, memTotal = 0, memUsed = 0, memPercent = 0;
+    let diskTotal = 0, diskUsed = 0, diskPercent = 0;
+    let load1 = 0, load5 = 0, load15 = 0;
+    let uptime = 0;
+    let netRx = 0, netTx = 0;
+
+    try {
+      const { stdout } = await execAsync("top -bn1 | head -5", { timeout: 5000 });
+      const lines = stdout.split("\n");
+      for (const line of lines) {
+        if (line.includes("Cpu")) {
+          const m = line.match(/(\d+\.?\d*)\s*id/);
+          if (m) cpu = Math.round((100 - parseFloat(m[1])) * 10) / 10;
+        }
+        if (line.includes("MiB Mem")) {
+          const m = line.match(/(\d+\.?\d*)\s+total.*?(\d+\.?\d*)\s+free.*?(\d+\.?\d*)\s+used/);
+          if (m) { memTotal = Math.round(parseFloat(m[1])); memUsed = Math.round(parseFloat(m[3])); memPercent = Math.round((memUsed / memTotal) * 1000) / 10; }
+        }
+      }
+    } catch { /* ignore */ }
+
+    try {
+      const { stdout } = await execAsync("cat /proc/loadavg", { timeout: 3000 });
+      const parts = stdout.trim().split(/\s+/);
+      load1 = parseFloat(parts[0]) || 0;
+      load5 = parseFloat(parts[1]) || 0;
+      load15 = parseFloat(parts[2]) || 0;
+    } catch { /* ignore */ }
+
+    try {
+      const { stdout } = await execAsync("cat /proc/uptime", { timeout: 3000 });
+      uptime = Math.round(parseFloat(stdout.trim().split(/\s+/)[0]) || 0);
+    } catch { /* ignore */ }
+
+    try {
+      const { stdout } = await execAsync("df -k / | tail -1", { timeout: 3000 });
+      const parts = stdout.trim().split(/\s+/);
+      diskTotal = Math.round(parseInt(parts[1]) / 1024);
+      diskUsed = Math.round(parseInt(parts[2]) / 1024);
+      diskPercent = Math.round((diskUsed / diskTotal) * 1000) / 10;
+    } catch { /* ignore */ }
+
+    try {
+      const { stdout } = await execAsync("cat /proc/net/dev | tail -n +3", { timeout: 3000 });
+      for (const line of stdout.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const parts = trimmed.split(/\s+/);
+        if (parts[0].includes("eth") || parts[0].includes("ens") || parts[0].includes("enp")) {
+          netRx += parseInt(parts[1]) || 0;
+          netTx += parseInt(parts[9]) || 0;
+        }
+      }
+    } catch { /* ignore */ }
+
+    return {
+      cpu, mem_total: memTotal, mem_used: memUsed, mem_percent: memPercent,
+      disk_total: diskTotal, disk_used: diskUsed, disk_percent: diskPercent,
+      load_1: load1, load_5: load5, load_15: load15, uptime,
+      net_rx: netRx, net_tx: netTx,
+    };
+  } catch (e) {
+    log("error", "agent", `采集系统信息异常: ${e.message}`);
+    return null;
+  }
+}
+
+async function collectProcessList() {
+  try {
+    const { stdout } = await execAsync(
+      "ps -eo user,pid,%cpu,%mem,vsz,rss,stat,time,args --sort=-%cpu --no-headers | head -50",
+      { timeout: 5000 }
+    );
+    const lines = stdout.trim().split("\n");
+    const result = [];
+    for (const line of lines) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length < 9) continue;
+      result.push({
+        user: parts[0],
+        pid: parseInt(parts[1]) || 0,
+        cpu: parseFloat(parts[2]) || 0,
+        mem: parseFloat(parts[3]) || 0,
+        vsz: parseInt(parts[4]) || 0,
+        rss: parseInt(parts[5]) || 0,
+        stat: parts[6],
+        time: parts[7],
+        command: parts.slice(8).join(" ").substring(0, 200),
+      });
+    }
+    return result;
+  } catch (e) {
+    log("error", "agent", `采集进程列表异常: ${e.message}`);
+    return [];
+  }
+}
+
+async function reportSysInfo() {
+  const sysInfo = await collectSysInfo();
+  const procList = await collectProcessList();
+  if (!sysInfo) return;
+
+  try {
+    const body = JSON.stringify({
+      host_id,
+      host_name: host_name || os.hostname(),
+      sysinfo: sysInfo,
+      processes: procList,
+    });
+    await fetch(`${server_url}/sysinfo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      signal: AbortSignal.timeout(10000),
+    });
+    log("info", "agent", `系统信息上报成功 (CPU:${sysInfo.cpu}% MEM:${sysInfo.mem_percent}% 进程:${procList.length})`);
+  } catch (e) {
+    log("warn", "agent", `系统信息上报异常: ${e.message}`);
+  }
 }
 
 async function report(procList) {
@@ -217,14 +342,20 @@ async function runCheck() {
     lastReportTime = Date.now();
     await report(processes);
   }
+  if (Date.now() - lastSysReportTime > SYS_REPORT_INTERVAL * 1000) {
+    lastSysReportTime = Date.now();
+    await reportSysInfo();
+  }
 }
 
 async function main() {
   log("info", "agent", `Agent 启动 - 主机: ${host_name || host_id} - 平台: ${os.platform()} ${os.release()}`);
-  log("info", "agent", `监控 ${processes.length} 个进程，上报间隔 ${report_interval}s`);
+  log("info", "agent", `监控 ${processes.length} 个进程，上报间隔 ${report_interval}s，系统信息上报间隔 ${SYS_REPORT_INTERVAL}s`);
 
   await report(processes);
   lastReportTime = Date.now();
+  await reportSysInfo();
+  lastSysReportTime = Date.now();
 
   while (true) {
     try {

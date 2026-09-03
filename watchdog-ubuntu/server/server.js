@@ -2,6 +2,10 @@ import express from "express";
 import mysql2 from "mysql2/promise";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+
+const execAsync = promisify(exec);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.WATCHDOG_PORT || "3090");
@@ -28,7 +32,7 @@ async function getPool() {
 }
 
 const app = express();
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 function ok(res, data = null, message = "ok") {
   res.json({ code: 0, message, data });
@@ -88,6 +92,94 @@ app.post("/api/event", async (req, res) => {
   } catch (e) {
     console.error("[event]", e.message);
     fail(res, 500, "事件上报失败: " + e.message);
+  }
+});
+
+// ================= 系统信息上报 =================
+
+app.post("/api/sysinfo", async (req, res) => {
+  const { host_id, host_name, sysinfo, processes } = req.body || {};
+  if (!host_id || !sysinfo) return fail(res, 400, "缺少必要字段");
+  try {
+    const p = await getPool();
+    const si = sysinfo;
+    await p.query(
+      `INSERT INTO watchdog_sysinfo (host_id, host_name, cpu_usage, mem_total, mem_used, mem_percent, disk_total, disk_used, disk_percent, load_1, load_5, load_15, uptime, net_rx, net_tx)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [host_id, host_name || host_id, si.cpu || 0, si.mem_total || 0, si.mem_used || 0, si.mem_percent || 0,
+       si.disk_total || 0, si.disk_used || 0, si.disk_percent || 0, si.load_1 || 0, si.load_5 || 0, si.load_15 || 0,
+       si.uptime || 0, si.net_rx || 0, si.net_tx || 0]
+    );
+    if (Array.isArray(processes) && processes.length > 0) {
+      await p.query(
+        `INSERT INTO watchdog_process_list (host_id, process_list) VALUES (?, ?)`,
+        [host_id, JSON.stringify(processes)]
+      );
+    }
+    await p.query("UPDATE watchdog_hosts SET last_heartbeat=NOW() WHERE host_id=?", [host_id]);
+    ok(res, { received: true });
+  } catch (e) {
+    console.error("[sysinfo]", e.message);
+    fail(res, 500, "系统信息上报失败: " + e.message);
+  }
+});
+
+// ================= 系统信息查询 =================
+
+app.get("/api/sysinfo/:hostId", async (req, res) => {
+  try {
+    const p = await getPool();
+    const [rows] = await p.query(
+      "SELECT * FROM watchdog_sysinfo WHERE host_id=? ORDER BY created_at DESC LIMIT 1",
+      [req.params.hostId]
+    );
+    ok(res, rows[0] || null);
+  } catch (e) {
+    fail(res, 500, e.message);
+  }
+});
+
+app.get("/api/sysinfo/:hostId/history", async (req, res) => {
+  try {
+    const { limit = 30 } = req.query;
+    const p = await getPool();
+    const [rows] = await p.query(
+      "SELECT cpu_usage, mem_percent, disk_percent, load_1, created_at FROM watchdog_sysinfo WHERE host_id=? ORDER BY created_at DESC LIMIT ?",
+      [req.params.hostId, Number(limit)]
+    );
+    ok(res, rows.reverse());
+  } catch (e) {
+    fail(res, 500, e.message);
+  }
+});
+
+app.get("/api/processes/:hostId", async (req, res) => {
+  try {
+    const p = await getPool();
+    const [rows] = await p.query(
+      "SELECT * FROM watchdog_process_list WHERE host_id=? ORDER BY created_at DESC LIMIT 1",
+      [req.params.hostId]
+    );
+    ok(res, rows[0] ? JSON.parse(rows[0].process_list) : []);
+  } catch (e) {
+    fail(res, 500, e.message);
+  }
+});
+
+app.post("/api/processes/:hostId/kill", async (req, res) => {
+  const { pid } = req.body || {};
+  if (!pid) return fail(res, 400, "缺少 pid");
+  try {
+    const { stdout } = await execAsync(`kill -9 ${parseInt(pid)}`, { timeout: 5000 });
+    console.log(`[kill] PID ${pid} 已终止`);
+    ok(res, { killed: true, pid: parseInt(pid) });
+  } catch (e) {
+    if (e.message.includes("ESRCH") || e.message.includes("No such process")) {
+      fail(res, 404, `进程 ${pid} 不存在`);
+    } else {
+      console.error(`[kill] PID ${pid} 失败:`, e.message);
+      fail(res, 500, `终止进程失败: ${e.message}`);
+    }
   }
 });
 

@@ -181,6 +181,8 @@ export const api = {
     events: (params?: Record<string, any>) => http.get<Paged<any>>("/watchdog/events", params),
     updateConfig: (hostId: string, processName: string, data: any) =>
       http.put(`/watchdog/hosts/${hostId}/config/${processName}`, data),
+    sysinfo: (hostId: string) => http.get<{ latest: any; history: any[] }>(`/watchdog/hosts/${hostId}/sysinfo`),
+    processList: (hostId: string) => http.get<{ list: any[]; total_count: number; target_count: number; created_at: string }>(`/watchdog/hosts/${hostId}/process-list`),
   },
 };
 

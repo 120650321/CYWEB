@@ -36,6 +36,14 @@ try {
     namedPlaceholders: false,
   });
 
+  // 监听连接池错误，防止未捕获异常导致进程崩溃
+  pool.on("error", (err) => {
+    console.error("[db] 连接池错误:", err.message);
+    if (err.code === "PROTOCOL_CONNECTION_LOST" || err.code === "ECONNREFUSED") {
+      console.warn("[db] 数据库连接丢失，请检查 MySQL 服务状态");
+    }
+  });
+
   connected = true;
   console.log("[db] 已连接到 MySQL 数据库", host + ":" + port, "数据库:", database);
 } catch (e) {

@@ -81,12 +81,45 @@ CREATE TABLE IF NOT EXISTS watchdog_event_log (
   INDEX idx_wel_level (level),
   INDEX idx_wel_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS watchdog_sysinfo (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  host_id VARCHAR(64) NOT NULL,
+  host_name VARCHAR(128) DEFAULT '',
+  cpu_usage DECIMAL(5,2) DEFAULT 0,
+  mem_total INT DEFAULT 0,
+  mem_used INT DEFAULT 0,
+  mem_percent DECIMAL(5,2) DEFAULT 0,
+  disk_total INT DEFAULT 0,
+  disk_used INT DEFAULT 0,
+  disk_percent DECIMAL(5,2) DEFAULT 0,
+  load_1 DECIMAL(5,2) DEFAULT 0,
+  load_5 DECIMAL(5,2) DEFAULT 0,
+  load_15 DECIMAL(5,2) DEFAULT 0,
+  uptime INT DEFAULT 0,
+  net_rx BIGINT DEFAULT 0,
+  net_tx BIGINT DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_si_host (host_id),
+  INDEX idx_si_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS watchdog_process_list (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  host_id VARCHAR(64) NOT NULL,
+  process_list LONGTEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_pl_host (host_id),
+  INDEX idx_pl_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 `;
 
   await conn.query(watchdogSQL);
   console.log("[ok] watchdog_hosts 表创建成功");
   console.log("[ok] watchdog_config 表创建成功");
   console.log("[ok] watchdog_event_log 表创建成功");
+  console.log("[ok] watchdog_sysinfo 表创建成功");
+  console.log("[ok] watchdog_process_list 表创建成功");
 
   await conn.end();
   console.log("[ok] 迁移完成");
