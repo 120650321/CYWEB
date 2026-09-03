@@ -175,6 +175,13 @@ export const api = {
       return `/api/admin/visits/export-excel?${qs.toString()}`;
     },
   },
+  watchdog: {
+    hosts: (params?: Record<string, any>) => http.get<Paged<any>>("/watchdog/hosts", params),
+    hostConfig: (hostId: string) => http.get<any[]>(`/watchdog/hosts/${hostId}/config`),
+    events: (params?: Record<string, any>) => http.get<Paged<any>>("/watchdog/events", params),
+    updateConfig: (hostId: string, processName: string, data: any) =>
+      http.put(`/watchdog/hosts/${hostId}/config/${processName}`, data),
+  },
 };
 
 export interface TableQuery {

@@ -51,6 +51,7 @@ const otherMenus = [
   { path: "/settings", title: "系统设置", icon: "Setting" },
   { path: "/logs", title: "操作日志", icon: "List" },
   { path: "/visits", title: "访问统计", icon: "DataAnalysis" },
+  { path: "/watchdog", title: "看门狗监控", icon: "Monitor" },
 ];
 
 const allMenus = computed(() => {

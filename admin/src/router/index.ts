@@ -30,6 +30,7 @@ const router = createRouter({
         { path: "settings", name: "settings", component: () => import("@/views/Settings.vue"), meta: { title: "系统设置", icon: "Setting" } },
         { path: "logs", name: "logs", component: () => import("@/views/Logs.vue"), meta: { title: "操作日志", icon: "List", adminOnly: true } },
         { path: "visits", name: "visits", component: () => import("@/views/Visits.vue"), meta: { title: "访问统计", icon: "DataAnalysis" } },
+        { path: "watchdog", name: "watchdog", component: () => import("@/views/Watchdog.vue"), meta: { title: "看门狗监控", icon: "Monitor" } },
       ],
     },
     { path: "/:pathMatch(.*)*", redirect: "/" },
