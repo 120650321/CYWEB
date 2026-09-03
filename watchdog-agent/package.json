@@ -1,0 +1,14 @@
+{
+  "name": "chiyao-watchdog-agent",
+  "version": "1.0.0",
+  "description": "驰耀科技看门狗监控客户端",
+  "type": "module",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js",
+    "install-service": "node install-service.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
