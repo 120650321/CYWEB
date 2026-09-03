@@ -1,0 +1,16 @@
+{
+  "name": "watchdog-server",
+  "version": "1.0.0",
+  "description": "看门狗监控服务端 - API + B/S 面板",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node migrate.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "mysql2": "^3.11.0"
+  },
+  "engines": { "node": ">=18.0.0" }
+}
