@@ -1,0 +1,11 @@
+{
+  "name": "watchdog-agent",
+  "version": "1.0.0",
+  "description": "看门狗监控 Agent - 守护 node/nginx/mysql 进程",
+  "type": "module",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "engines": { "node": ">=18.0.0" }
+}
