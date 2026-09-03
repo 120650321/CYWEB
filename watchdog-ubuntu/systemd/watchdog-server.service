@@ -1,0 +1,23 @@
+[Unit]
+Description=Watchdog Server - API + B/S 管理面板
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/watchdog/server
+Environment=WATCHDOG_PORT=3090
+Environment=DB_HOST=127.0.0.1
+Environment=DB_PORT=3306
+Environment=DB_USER=root
+Environment=DB_PASS=root
+Environment=DB_NAME=watchdog
+ExecStart=/usr/bin/node /opt/watchdog/server/server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=watchdog-server
+
+[Install]
+WantedBy=multi-user.target

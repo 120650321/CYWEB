@@ -1,0 +1,17 @@
+[Unit]
+Description=Watchdog Agent - 守护 node/nginx/mysql 进程
+After=network.target mysql.service nginx.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/watchdog/agent
+ExecStart=/usr/bin/node /opt/watchdog/agent/agent.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=watchdog-agent
+
+[Install]
+WantedBy=multi-user.target
