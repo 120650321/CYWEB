@@ -9,6 +9,7 @@ import { initDb, dbConnected } from "./db.js";
 import publicRoutes from "./routes/public.js";
 import adminRoutes from "./routes/admin.js";
 import uploadRoutes from "./routes/upload.js";
+import watchdogRoutes from "./routes/watchdog.js";
 import { fail } from "./utils.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -75,6 +76,7 @@ app.use(
 app.use("/api/public", publicRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/watchdog", watchdogRoutes);
 
 // 健康检查
 app.get("/api/health", (req, res) => {
