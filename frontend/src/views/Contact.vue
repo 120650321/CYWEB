@@ -384,5 +384,17 @@ onMounted(async () => {
   .ct-cards {
     grid-template-columns: 1fr;
   }
+  .ct-form__head {
+    padding: 20px 20px 0;
+  }
+  .ct-form__head h2 {
+    font-size: 22px;
+  }
+  .ct-info {
+    padding: 24px 20px;
+  }
+  .ct-qr__grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 </style>

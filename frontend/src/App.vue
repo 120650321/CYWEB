@@ -27,7 +27,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
 .back-top {
   position: fixed;
   right: 28px;
-  bottom: 32px;
+  bottom: calc(32px + var(--safe-area-bottom));
   width: 46px;
   height: 46px;
   border-radius: 12px;
@@ -37,6 +37,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
   box-shadow: 0 10px 28px rgba(11, 95, 255, 0.45);
   z-index: 90;
   transition: transform var(--duration-normal) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .back-top:hover {
@@ -50,5 +51,16 @@ onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+@media (max-width: 480px) {
+  .back-top {
+    right: 16px;
+    bottom: calc(20px + var(--safe-area-bottom));
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 18px;
+  }
 }
 </style>

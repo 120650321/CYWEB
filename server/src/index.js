@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -65,13 +66,54 @@ if (dbConnected()) {
 
 const app = express();
 
+app.disable("x-powered-by");
 app.set("trust proxy", true);
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: process.env.NODE_ENV === "production"
+    ? (process.env.CORS_ORIGINS || "https://www.ynyzzn.com").split(",")
+    : true,
+  credentials: true,
+}));
+app.use(compression());
 app.use(express.json({ limit: "200mb" }));
 app.use(express.urlencoded({ extended: true, limit: "200mb" }));
 
-// 对留言提交接口应用限流：每 IP 每分钟最多 5 次
+// ── 安全响应头 ──
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("X-XSS-Protection", "0");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("X-DNS-Prefetch-Control", "on");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.ynyzzn.com; " +
+      "style-src 'self' 'unsafe-inline' https://www.ynyzzn.com; " +
+      "img-src 'self' data: blob: https://www.ynyzzn.com; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' https://www.ynyzzn.com; " +
+      "frame-src 'self'; " +
+      "object-src 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self';"
+    );
+  }
+  next();
+});
+
+// ── 全局速率限制 ──
+const globalLimiter = rateLimit(200, 60000);
+app.use("/api", globalLimiter);
+
+// 对留言提交接口应用更严格的限流：每 IP 每分钟最多 5 次
 app.use("/api/public/messages", rateLimit(5, 60000));
+// 对登录接口应用限流：每 IP 每分钟最多 10 次
+app.use("/api/admin/auth/login", rateLimit(10, 60000));
 
 // 静态资源（上传文件）
 app.use(
@@ -113,7 +155,7 @@ if (process.env.NODE_ENV === "production") {
     app.use("/admin", express.static(adminDist, {
       setHeaders(res, filePath) {
         const ext = path.extname(filePath).toLowerCase();
-        if ([".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2"].includes(ext)) {
+        if ([".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2", ".webp", ".gif"].includes(ext)) {
           res.setHeader("Cache-Control", "public, max-age=604800, immutable");
         }
       },
@@ -128,7 +170,7 @@ if (process.env.NODE_ENV === "production") {
     app.use(express.static(frontendDist, {
       setHeaders(res, filePath) {
         const ext = path.extname(filePath).toLowerCase();
-        if ([".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2"].includes(ext)) {
+        if ([".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2", ".webp", ".gif"].includes(ext)) {
           res.setHeader("Cache-Control", "public, max-age=604800, immutable");
         } else if (ext === ".html") {
           res.setHeader("Cache-Control", "no-cache");

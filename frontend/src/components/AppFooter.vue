@@ -88,6 +88,7 @@ const supportLinks = [
   color: rgba(255, 255, 255, 0.72);
   position: relative;
   overflow: hidden;
+  padding-bottom: var(--safe-area-bottom);
 }
 
 .app-footer::before {
@@ -294,6 +295,20 @@ const supportLinks = [
 @media (max-width: 560px) {
   .app-footer__main {
     grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 36px 16px 28px;
+  }
+  .app-footer__bottom-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+  }
+  .app-footer__name {
+    font-size: 16px;
+  }
+  .app-footer__col h4 {
+    font-size: 15px;
+    margin-bottom: 14px;
   }
 }
 </style>

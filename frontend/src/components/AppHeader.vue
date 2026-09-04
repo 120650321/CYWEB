@@ -94,6 +94,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
   right: 0;
   z-index: 100;
   height: var(--header-h);
+  padding-top: var(--safe-area-top);
   transition: all var(--duration-normal) var(--ease-out);
 }
 
@@ -297,11 +298,27 @@ onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
   .app-header__nav {
     display: none;
   }
+  .app-header__phone {
+    display: none;
+  }
   .app-header__burger {
     display: flex;
   }
   .app-header__mobile {
     display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header__logo-name {
+    font-size: 16px;
+  }
+  .app-header__logo-img {
+    width: 36px;
+    height: 36px;
+  }
+  .app-header__inner {
+    gap: 12px;
   }
 }
 </style>

@@ -232,6 +232,17 @@ watch(() => route.query, () => {
 }
 
 @media (max-width: 600px) {
+  .filter-bar {
+    padding: 16px;
+    gap: 12px;
+  }
+  .filter-cats {
+    width: 100%;
+  }
+  .filter-cat {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
   .filter-search {
     width: 100%;
   }

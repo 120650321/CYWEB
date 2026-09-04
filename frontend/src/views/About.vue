@@ -401,6 +401,9 @@ onMounted(async () => {
     grid-template-columns: 1fr;
     gap: 36px;
   }
+  .about-intro__media {
+    min-height: 280px;
+  }
   .honors {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -421,6 +424,22 @@ onMounted(async () => {
   .timeline__item--right .timeline__dot {
     left: 2px;
     right: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .about-intro__text h2 {
+    font-size: 24px;
+  }
+  .honors {
+    grid-template-columns: 1fr;
+  }
+  .about-intro__badge {
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+  .about-intro__badge .num {
+    font-size: 22px;
   }
 }
 </style>

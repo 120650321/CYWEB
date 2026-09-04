@@ -396,9 +396,21 @@ router.post("/messages", async (req, res) => {
   }
   if (subject && subject.length > 100) return fail(res, 400, "主题过长");
   if (content.length > 2000) return fail(res, 400, "留言内容过长");
+
+  // 输入消毒：去除 HTML 标签，防止 XSS
+  const sanitize = (str) => String(str).replace(/<[^>]*>/g, "").trim();
+  const safeName = sanitize(name).slice(0, 50);
+  const safePhone = String(phone).replace(/[^\d\s\-+()]/g, "").slice(0, 30);
+  const safeEmail = String(email).replace(/[^\w@.\-+]/g, "").slice(0, 100);
+  const safeSubject = sanitize(subject).slice(0, 100);
+  const safeContent = sanitize(content).slice(0, 2000);
+
+  if (!safeName) return fail(res, 400, "请填写有效的姓名");
+  if (!safeContent || safeContent.length < 5) return fail(res, 400, "请填写留言内容（不少于5个字）");
+
   const result = await db.prepare(
     "INSERT INTO messages (name, phone, email, subject, content) VALUES (?, ?, ?, ?, ?)"
-  ).run(String(name).slice(0, 50), String(phone), String(email).slice(0, 100), subject, content);
+  ).run(safeName, safePhone, safeEmail, safeSubject, safeContent);
   ok(res, { id: result.lastInsertRowid }, "留言提交成功，我们将尽快与您联系");
 });
 

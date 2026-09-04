@@ -73,4 +73,25 @@ defineProps<{ tag?: string; title: string; desc?: string; dark?: boolean }>();
 .sec-head--dark p {
   color: rgba(255,255,255,0.65);
 }
+
+@media (max-width: 768px) {
+  .sec-head h2 {
+    font-size: 28px;
+  }
+  .sec-head p {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sec-head {
+    margin-bottom: 24px;
+  }
+  .sec-head h2 {
+    font-size: 24px;
+  }
+  .sec-head p {
+    font-size: 13px;
+  }
+}
 </style>
