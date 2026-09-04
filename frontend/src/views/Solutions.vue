@@ -19,7 +19,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHero title="解决方案" sub="面向行业场景深度定制的智慧化整体方案，助力客户数字化转型升级" />
+    <PageHero title="解决方案" sub="面向行业场景深度定制的智慧化整体方案，涵盖物联网监控、智能监测、设备运维管理、大数据可视化等领域" />
 
     <section class="section">
       <div class="container">

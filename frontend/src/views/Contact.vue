@@ -19,7 +19,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHero title="联系我们" sub="无论您是产品咨询、方案设计还是项目实施需求，欢迎随时与我们联系" />
+    <PageHero title="联系我们" sub="无论您是产品咨询、方案设计还是项目实施需求，欢迎随时联系。提供软硬件定制开发、系统集成、平台部署实施与售后技术支持服务" />
 
     <section class="section">
       <div class="container">

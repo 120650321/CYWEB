@@ -20,7 +20,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHero title="关于我们" sub="了解驰耀科技，从产品研发到方案落地的一体化智慧化服务商" />
+    <PageHero title="关于我们" sub="深耕行业数字化领域，专注智能化建设，技术为本、服务落地，具备完整项目实施经验" />
 
     <!-- 公司简介 -->
     <section class="section">
@@ -81,7 +81,7 @@ onMounted(async () => {
     <section class="section section--light">
       <div class="container">
         <Reveal>
-          <SectionTitle tag="TEAM" title="我们的团队" desc="专业团队，为客户提供端到端的智慧化服务" />
+          <SectionTitle tag="TEAM" title="我们的团队" desc="专业团队，可定制化、可扩展、易运维，为客户提供端到端的智慧化服务" />
         </Reveal>
         <div class="team">
           <Reveal v-for="(t, i) in (about?.team || [])" :key="i" :delay="i % 3" class="team-card">

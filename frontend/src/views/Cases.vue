@@ -60,7 +60,7 @@ watch(() => route.query, () => {
 
 <template>
   <div>
-    <PageHero title="案例展示" sub="深耕行业场景，用真实交付案例验证方案价值" />
+    <PageHero title="案例展示" sub="深耕行业场景，用真实交付案例验证方案价值，项目全流程实施交付" />
 
     <section class="section">
       <div class="container">

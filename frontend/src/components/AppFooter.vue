@@ -31,7 +31,7 @@ const supportLinks = [
             <p class="app-footer__en">{{ site.enName }}</p>
           </div>
         </div>
-        <p class="app-footer__desc">{{ site.site_description || "云南驰耀科技有限公司以物联网平台、智慧化解决方案、安防监控与信息化系统集成为核心业务方向。" }}</p>
+        <p class="app-footer__desc">{{ site.site_description || "云南驰耀科技有限公司深耕行业数字化领域，以物联网平台、智能监测系统、智慧化解决方案、安防监控与信息化系统集成为核心业务，提供软硬件一体化全栈技术服务。" }}</p>
         <p class="app-footer__slogan">
           <span class="app-footer__slogan-line"></span>
           {{ site.slogan }}

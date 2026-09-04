@@ -415,4 +415,67 @@ router.post("/visit", async (req, res) => {
   ok(res, null, "ok");
 });
 
+// ---------- Sitemap 动态生成 ----------
+router.get("/sitemap.xml", async (req, res) => {
+  const baseUrl = config.site.url || "https://www.ynyzzn.com";
+  const today = new Date().toISOString().split("T")[0];
+
+  const staticPages = [
+    { loc: "/", priority: "1.0", changefreq: "daily" },
+    { loc: "/关于我们", priority: "0.8", changefreq: "monthly" },
+    { loc: "/产品中心", priority: "0.9", changefreq: "weekly" },
+    { loc: "/解决方案", priority: "0.9", changefreq: "weekly" },
+    { loc: "/案例展示", priority: "0.8", changefreq: "weekly" },
+    { loc: "/软件资料", priority: "0.7", changefreq: "weekly" },
+    { loc: "/新闻资讯", priority: "0.8", changefreq: "daily" },
+    { loc: "/联系我们", priority: "0.7", changefreq: "monthly" },
+  ];
+
+  let urls = "";
+
+  for (const p of staticPages) {
+    urls += `  <url>\n    <loc>${baseUrl}${p.loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>\n`;
+  }
+
+  try {
+    const products = await db.prepare("SELECT id, updated_at FROM products WHERE status = 1 ORDER BY id").all();
+    for (const p of products) {
+      const lastmod = p.updated_at ? new Date(p.updated_at).toISOString().split("T")[0] : today;
+      urls += `  <url>\n    <loc>${baseUrl}/产品中心/${p.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+    }
+
+    const solutions = await db.prepare("SELECT id, updated_at FROM solutions WHERE status = 1 ORDER BY id").all();
+    for (const s of solutions) {
+      const lastmod = s.updated_at ? new Date(s.updated_at).toISOString().split("T")[0] : today;
+      urls += `  <url>\n    <loc>${baseUrl}/解决方案/${s.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+    }
+
+    const cases = await db.prepare("SELECT id, updated_at FROM cases WHERE status = 1 ORDER BY id").all();
+    for (const c of cases) {
+      const lastmod = c.updated_at ? new Date(c.updated_at).toISOString().split("T")[0] : today;
+      urls += `  <url>\n    <loc>${baseUrl}/案例展示/${c.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+    }
+
+    const articles = await db.prepare("SELECT id, publish_time FROM articles WHERE status = 1 ORDER BY id").all();
+    for (const a of articles) {
+      const lastmod = a.publish_time ? new Date(a.publish_time).toISOString().split("T")[0] : today;
+      urls += `  <url>\n    <loc>${baseUrl}/新闻资讯/${a.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+    }
+
+    const downloads = await db.prepare("SELECT id, updated_at FROM downloads WHERE status = 1 ORDER BY id").all();
+    for (const d of downloads) {
+      const lastmod = d.updated_at ? new Date(d.updated_at).toISOString().split("T")[0] : today;
+      urls += `  <url>\n    <loc>${baseUrl}/软件资料/${d.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+    }
+  } catch (err) {
+    console.error("[sitemap] 数据库查询失败:", err.message);
+  }
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}</urlset>`;
+
+  res.setHeader("Content-Type", "application/xml; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.send(xml);
+});
+
 export default router;

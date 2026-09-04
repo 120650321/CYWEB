@@ -106,7 +106,18 @@ if (process.env.NODE_ENV === "production") {
 
   // 后台 /admin（Express 5 通配符改用正则）
   if (fs.existsSync(adminDist)) {
-    app.use("/admin", express.static(adminDist));
+    app.use("/admin", (req, res, next) => {
+      res.setHeader("X-Robots-Tag", "noindex, nofollow");
+      next();
+    });
+    app.use("/admin", express.static(adminDist, {
+      setHeaders(res, filePath) {
+        const ext = path.extname(filePath).toLowerCase();
+        if ([".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2"].includes(ext)) {
+          res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+        }
+      },
+    }));
     app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
       res.sendFile(path.join(adminDist, "index.html"));
     });
@@ -114,7 +125,16 @@ if (process.env.NODE_ENV === "production") {
 
   // 前台首页（排除 /api /uploads /admin）
   if (fs.existsSync(frontendDist)) {
-    app.use(express.static(frontendDist));
+    app.use(express.static(frontendDist, {
+      setHeaders(res, filePath) {
+        const ext = path.extname(filePath).toLowerCase();
+        if ([".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2"].includes(ext)) {
+          res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+        } else if (ext === ".html") {
+          res.setHeader("Cache-Control", "no-cache");
+        }
+      },
+    }));
     app.get(/^(?!\/(api|uploads|admin))/, (req, res) => {
       res.sendFile(path.join(frontendDist, "index.html"));
     });
@@ -133,10 +153,35 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(config.port, () => {
-  console.log("========================================");
-  console.log(`  🚀 驰耀科技官网后端服务已启动`);
-  console.log(`  ➜ 地址: http://localhost:${config.port}`);
-  console.log(`  ➜ 健康检查: http://localhost:${config.port}/api/health`);
-  console.log(`  ➜ 上传目录: ${config.uploadDir}`);
-  console.log("========================================");
+  const isProd = process.env.NODE_ENV === 'production';
+  const d1 = path.resolve(__dirname, '../../frontend/dist');
+  const d2 = path.resolve(__dirname, '../../admin/dist');
+  const ok1 = fs.existsSync(d1);
+  const ok2 = fs.existsSync(d2);
+
+  console.log('');
+  console.log('========================================');
+  console.log('  🚀  驰耀科技官网后端服务已启动');
+  console.log('========================================');
+  console.log('  运行模式 : ' + (isProd ? '🔵 生产模式' : '🟡 开发模式'));
+  console.log('  监听端口 : ' + config.port);
+  console.log('  站点名称 : ' + config.site.name);
+  console.log('----------------------------------------');
+  if (isProd) {
+    console.log('  前台页面 : http://localhost:' + config.port);
+    console.log('  后台管理 : http://localhost:' + config.port + '/admin');
+    console.log('  健康检查 : http://localhost:' + config.port + '/api/health');
+    console.log('  Sitemap  : http://localhost:' + config.port + '/api/public/sitemap.xml');
+    console.log('----------------------------------------');
+    console.log('  前台构建 : ' + (ok1 ? '✅ 已就绪' : '❌ 未构建'));
+    console.log('  后台构建 : ' + (ok2 ? '✅ 已就绪' : '❌ 未构建'));
+  } else {
+    console.log('  API 地址 : http://localhost:' + config.port + '/api');
+    console.log('  健康检查 : http://localhost:' + config.port + '/api/health');
+    console.log('  ⚠ 开发模式请使用 npm run dev 启动前端');
+  }
+  console.log('----------------------------------------');
+  console.log('  上传目录 : ' + config.uploadDir);
+  console.log('========================================');
+  console.log('');
 });

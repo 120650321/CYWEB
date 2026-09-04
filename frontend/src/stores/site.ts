@@ -15,7 +15,7 @@ export const useSiteStore = defineStore("site", {
     mobile: (s) => s.site.site_mobile || "138 8888 0000",
     email: (s) => s.site.site_email || "info@ynyzzn.com",
     address: (s) => s.site.site_address || "",
-    slogan: (s) => s.site.site_slogan || "智慧物联 · 科技赋能",
+    slogan: (s) => s.site.site_slogan || "智慧物联 · 数智赋能",
     domain: (s) => s.site.site_domain || "ynyzzn.com",
   },
   actions: {

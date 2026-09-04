@@ -63,7 +63,7 @@ watch(() => route.query, () => {
 
 <template>
   <div>
-    <PageHero title="新闻资讯" sub="关注驰耀动态，掌握行业前沿技术与资讯" />
+    <PageHero title="新闻资讯" sub="关注驰耀科技动态，掌握物联网、智能监测、数字化转型等行业前沿技术与资讯" />
 
     <section class="section">
       <div class="container">

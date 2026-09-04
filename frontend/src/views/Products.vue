@@ -80,7 +80,7 @@ watch(() => route.query, () => {
 
 <template>
   <div>
-    <PageHero title="产品中心" sub="自主研发物联网平台与智能硬件，为各行业数字化提供核心产品支撑" />
+    <PageHero title="产品中心" sub="自主研发物联网平台与智能硬件，支持国产化适配与信创兼容，为各行业数字化提供核心产品支撑" />
 
     <section class="section">
       <div class="container">

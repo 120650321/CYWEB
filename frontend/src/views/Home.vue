@@ -49,6 +49,29 @@ function nextBanner() {
 function startAuto() { stopAuto(); timer = setInterval(nextBanner, 4000); }
 function stopAuto() { if (timer) clearInterval(timer); timer = null; }
 
+const jsonLd = computed(() => ({
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "云南驰耀科技有限公司",
+  "alternateName": "驰耀科技",
+  "url": "https://www.ynyzzn.com",
+  "logo": "https://www.ynyzzn.com/logo.png",
+  "description": "云南驰耀科技有限公司专注行业数字化、物联网智能监测平台研发，提供软硬件一体化解决方案，支持定制开发、项目实施部署与运维服务。",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": site.phone.replace(/\s/g, ""),
+    "contactType": "customer service",
+    "availableLanguage": "Chinese"
+  },
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "昆明市",
+    "addressRegion": "云南省",
+    "addressCountry": "CN"
+  },
+  "sameAs": []
+}));
+
 onMounted(async () => {
   try { home.value = await api.home(); } finally { loading.value = false; }
   startAuto();
@@ -59,6 +82,8 @@ onBeforeUnmount(stopAuto);
 
 <template>
   <div class="home">
+    <script type="application/ld+json" v-text="JSON.stringify(jsonLd)"></script>
+
     <!-- ======= Hero Banner ======= -->
     <section class="hero" @mouseenter="stopAuto" @mouseleave="startAuto">
       <div class="hero__bg">
@@ -109,7 +134,7 @@ onBeforeUnmount(stopAuto);
     <section id="capabilities" class="section">
       <div class="container">
         <Reveal>
-          <SectionTitle tag="CORE STRENGTH" title="核心能力" :desc="home ? '' : '从产品研发到方案落地，构建端到端的智慧化服务能力'" />
+          <SectionTitle tag="CORE STRENGTH" title="核心能力" :desc="home ? '' : '软硬件一体化全栈技术服务，从产品研发到方案落地，构建端到端的智慧化服务能力'" />
         </Reveal>
         <div class="caps">
           <Reveal v-for="(c, i) in (home?.capabilities || []).slice(0, 4)" :key="i" :delay="i % 4" class="caps__item">
@@ -131,7 +156,7 @@ onBeforeUnmount(stopAuto);
     <section class="section section--light">
       <div class="container">
         <Reveal>
-          <SectionTitle tag="PRODUCTS" title="产品中心" desc="自主研发物联网平台与智能硬件，为各行业数字化提供核心产品支撑" />
+          <SectionTitle tag="PRODUCTS" title="产品中心" desc="自主研发物联网平台与智能硬件，支持国产化适配与信创兼容，为各行业数字化提供核心产品支撑" />
         </Reveal>
         <div class="grid-4">
           <Reveal v-for="(p, i) in (home?.products || []).slice(0, 4)" :key="p.id" :delay="i % 4">
@@ -148,7 +173,7 @@ onBeforeUnmount(stopAuto);
     <section class="section section--dark">
       <div class="container">
         <Reveal>
-          <SectionTitle tag="SOLUTIONS" title="行业解决方案" desc="面向行业场景深度定制的智慧化整体方案" dark />
+          <SectionTitle tag="SOLUTIONS" title="行业解决方案" desc="面向行业场景深度定制的智慧化整体方案，涵盖物联网监控、设备运维管理、大数据可视化等领域" dark />
         </Reveal>
         <div class="grid-3">
           <Reveal v-for="(s, i) in (home?.solutions || []).slice(0, 3)" :key="s.id" :delay="i % 3">
@@ -181,7 +206,7 @@ onBeforeUnmount(stopAuto);
     <section class="section">
       <div class="container">
         <Reveal>
-          <SectionTitle tag="CASES" title="典型案例" desc="深耕行业场景，用真实交付案例验证方案价值" />
+          <SectionTitle tag="CASES" title="典型案例" desc="深耕行业场景，用真实交付案例验证方案价值，项目全流程实施交付" />
         </Reveal>
         <div class="grid-3">
           <Reveal v-for="(c, i) in (home?.cases || []).slice(0, 3)" :key="c.id" :delay="i % 3">
@@ -233,7 +258,7 @@ onBeforeUnmount(stopAuto);
             <div class="cta-banner__info">
               <span class="cta-banner__tag">CONTACT US</span>
               <h2>{{ "开启智慧物联合作" }}</h2>
-              <p>{{ "无论您是产品咨询、方案设计还是项目实施需求，欢迎随时与我们联系，我们将在 24 小时内响应。" }}</p>
+              <p>{{ "无论您是产品咨询、方案设计还是项目实施需求，欢迎随时与我们联系，我们将在 24 小时内响应。提供软硬件定制开发、系统集成、平台部署实施与售后技术支持服务。" }}</p>
               <div class="cta-banner__contacts">
                 <a class="cta-chip" :href="`tel:${site.phone.replace(/\s/g, '')}`"><span>📞</span> {{ site.phone }}</a>
                 <a class="cta-chip" :href="`mailto:${site.email}`"><span>✉️</span> {{ site.email }}</a>

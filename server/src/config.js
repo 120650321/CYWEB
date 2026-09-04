@@ -53,6 +53,7 @@ export const config = {
     shortName: "驰耀科技",
     enName: "CHIYAO TECHNOLOGY",
     domain: "ynyzzn.com",
+    url: process.env.SITE_URL || "https://www.ynyzzn.com",
     icp: "滇ICP备2024047880号-1",
     icpUrl: "https://beian.miit.gov.cn",
     icpDate: "2024-12-12",
