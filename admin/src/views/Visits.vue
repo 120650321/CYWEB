@@ -355,6 +355,28 @@ async function handleClearByCustom() {
   } catch { }
 }
 
+async function handleRefreshRegions() {
+  try {
+    const desc = customDateMode.value && dateRange.value
+      ? `${dateRange.value[0]} 至 ${dateRange.value[1]}`
+      : "全部";
+    await ElMessageBox.confirm(
+      `将重新解析${desc}的历史访问记录IP对应的区域信息（精确到地市），确定继续？`,
+      "刷新区域数据",
+      { type: "info", confirmButtonText: "开始刷新", cancelButtonText: "取消" }
+    );
+    const params: any = {};
+    if (customDateMode.value && dateRange.value) {
+      params.start_date = dateRange.value[0];
+      params.end_date = dateRange.value[1];
+    }
+    const res = await api.visits.refreshRegions(params);
+    ElMessage.success(res.message || `已扫描 ${res.total} 条记录，更新了 ${res.updated} 条区域数据`);
+    await fetchStats();
+    await fetchLogs();
+  } catch { }
+}
+
 async function handleExportExcel() {
   const params = new URLSearchParams();
   if (customDateMode.value && dateRange.value) {
@@ -474,6 +496,9 @@ onBeforeUnmount(() => {
         </el-button>
         <el-button type="primary" plain @click="handleExportPDF">
           <el-icon><Document /></el-icon>导出PDF
+        </el-button>
+        <el-button type="warning" plain @click="handleRefreshRegions">
+          <el-icon><RefreshRight /></el-icon>刷新区域
         </el-button>
         <el-popover placement="bottom" :width="280" trigger="click">
           <template #reference>

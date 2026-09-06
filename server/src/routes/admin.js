@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { authRequired, roleRequired, signToken, verifyPassword, hashPassword } from "../auth.js";
-import { ok, fail, paginate, paged, decodeJSON, getClientIp } from "../utils.js";
+import { ok, fail, paginate, paged, decodeJSON, getClientIp, resolveRegion } from "../utils.js";
 
 const router = Router();
 
@@ -738,6 +738,37 @@ router.delete("/visits/clear-by-date", roleRequired("superadmin"), async (req, r
   const result = await db.prepare(sql).run(...params);
   await log(req, "清理访问统计", `已清理 ${start_date || "之前"} 至 ${end_date || "之后"} 的访问日志，共 ${result.changes} 条`);
   ok(res, { deleted: result.changes }, `已清理 ${result.changes} 条访问日志`);
+});
+
+// 刷新历史访问记录的区域数据（重新解析IP）
+router.put("/visits/refresh-regions", roleRequired("superadmin"), async (req, res) => {
+  const { start_date, end_date } = req.body || {};
+  let sql = "SELECT id, ip FROM visit_logs WHERE region = ?";
+  const params = ["中国"];
+  if (start_date) {
+    sql += " AND created_at >= ?";
+    params.push(start_date);
+  }
+  if (end_date) {
+    sql += " AND created_at <= ?";
+    params.push(end_date + " 23:59:59");
+  }
+  sql += " LIMIT 5000";
+
+  const rows = await db.prepare(sql).all(...params);
+  let updated = 0;
+  const updateStmt = db.prepare("UPDATE visit_logs SET region = ? WHERE id = ?");
+
+  for (const row of rows) {
+    const newRegion = resolveRegion(row.ip);
+    if (newRegion && newRegion !== row.region) {
+      updateStmt.run(newRegion, row.id);
+      updated++;
+    }
+  }
+
+  await log(req, "刷新访问区域", `重新解析了 ${rows.length} 条记录，更新了 ${updated} 条`);
+  ok(res, { total: rows.length, updated }, `已扫描 ${rows.length} 条记录，更新了 ${updated} 条区域数据`);
 });
 
 router.get("/visits/export-excel", async (req, res) => {

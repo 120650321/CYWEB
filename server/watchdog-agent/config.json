@@ -1,0 +1,40 @@
+{
+  "api_base": "http://localhost:3000/api/watchdog",
+  "host_id": "chiyao-server",
+  "host_name": "驰耀科技服务器",
+  "processes": [
+    {
+      "name": "node",
+      "display": "Node.js 后端",
+      "check_cmd": "check_port 3000",
+      "start_cmd": "npm run prod",
+      "stop_cmd": "",
+      "interval": 30,
+      "max_restart": 5,
+      "restart_window": 600,
+      "enabled": true
+    },
+    {
+      "name": "nginx",
+      "display": "Nginx",
+      "check_cmd": "check_service nginx",
+      "start_cmd": "net start nginx",
+      "stop_cmd": "net stop nginx",
+      "interval": 30,
+      "max_restart": 3,
+      "restart_window": 600,
+      "enabled": false
+    },
+    {
+      "name": "mysql",
+      "display": "MySQL",
+      "check_cmd": "check_service MySQL96",
+      "start_cmd": "net start MySQL96",
+      "stop_cmd": "net stop MySQL96",
+      "interval": 30,
+      "max_restart": 3,
+      "restart_window": 600,
+      "enabled": true
+    }
+  ]
+}

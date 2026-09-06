@@ -1,60 +1,11 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { config } from "../config.js";
-import { ok, fail, paginate, paged, decodeJSON, getClientIp } from "../utils.js";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const IP2Region = require("ip2region");
+import { ok, fail, paginate, paged, decodeJSON, getClientIp, resolveRegion } from "../utils.js";
 
 const router = Router();
 
-// IP 区域解析（基于 ip2region 离线数据库）
-const ip2regionSearcher = (() => {
-  try {
-    return new IP2Region();
-  } catch (e) {
-    console.warn("ip2region 初始化失败，将使用简单 IP 识别:", e.message);
-    return null;
-  }
-})();
-
-function resolveRegion(ip) {
-  if (!ip || ip === "::1" || ip === "127.0.0.1" || ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")) {
-    return "本地网络";
-  }
-
-  if (ip2regionSearcher) {
-    try {
-      const result = ip2regionSearcher.search(ip);
-      if (result && result.region) {
-        const parts = result.region.split("|");
-        const country = parts[0] || "";
-        const province = parts[2] || "";
-        const city = parts[3] || "";
-        const isp = parts[4] || "";
-
-        const arr = [];
-        if (country) arr.push(country);
-        if (province && province !== "0") arr.push(province);
-        if (city && city !== "0" && city !== province) arr.push(city);
-        if (isp && isp !== "0") arr.push(isp);
-
-        return arr.join(" ") || "未知";
-      }
-    } catch {
-      // fallback
-    }
-  }
-
-  const parts = ip.split(".");
-  if (parts.length === 4) {
-    const first = parseInt(parts[0]);
-    if (first >= 14 && first <= 223) return "中国";
-  }
-  return "其他地区";
-}
-
-  function normalizePublicLink(path, fallback = "/") {
+function normalizePublicLink(path, fallback = "/") {
   if (!path || typeof path !== "string") return fallback;
   const value = path.trim();
   if (!value) return fallback;

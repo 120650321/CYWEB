@@ -165,6 +165,7 @@ export const api = {
     logs: (params?: Record<string, any>) => http.get<Paged<any>>("/visits/logs", params),
     clear: () => http.del("/visits/clear"),
     clearByDate: (data: { start_date: string; end_date: string }) => http.del("/visits/clear-by-date", data),
+    refreshRegions: (data?: { start_date?: string; end_date?: string }) => http.put<any>("/visits/refresh-regions", data || {}),
     exportExcelUrl: (params?: Record<string, any>) => {
       const qs = new URLSearchParams();
       if (params) {

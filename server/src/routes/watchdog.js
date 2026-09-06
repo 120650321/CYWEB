@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { ok, fail } from "../utils.js";
+import { authRequired } from "../auth.js";
 
 const router = Router();
 
-// ================= Agent 上报接口 =================
+// ================= Agent 上报接口（无需认证） =================
 
 // Agent 心跳 + 状态上报
 router.post("/report", async (req, res) => {
@@ -68,10 +69,10 @@ router.post("/event", async (req, res) => {
   }
 });
 
-// ================= 管理后台接口 =================
+// ================= 管理后台接口（需要认证） =================
 
 // 主机列表
-router.get("/hosts", async (req, res) => {
+router.get("/hosts", authRequired, async (req, res) => {
   const { page = 1, size = 20 } = req.query;
   const offset = (Number(page) - 1) * Number(size);
   const list = await db.query(
@@ -83,7 +84,7 @@ router.get("/hosts", async (req, res) => {
 });
 
 // 主机进程配置列表
-router.get("/hosts/:hostId/config", async (req, res) => {
+router.get("/hosts/:hostId/config", authRequired, async (req, res) => {
   const list = await db.query(
     "SELECT * FROM watchdog_config WHERE host_id = ? ORDER BY id",
     [req.params.hostId]
@@ -92,7 +93,7 @@ router.get("/hosts/:hostId/config", async (req, res) => {
 });
 
 // 事件日志查询
-router.get("/events", async (req, res) => {
+router.get("/events", authRequired, async (req, res) => {
   const { page = 1, size = 30, host_id, process_name, event_type, level, start_date, end_date } = req.query;
   const conditions = [];
   const params = [];
@@ -123,7 +124,7 @@ router.get("/events", async (req, res) => {
 });
 
 // 更新进程配置
-router.put("/hosts/:hostId/config/:processName", async (req, res) => {
+router.put("/hosts/:hostId/config/:processName", authRequired, async (req, res) => {
   const { enabled, check_interval, max_restart } = req.body || {};
   await db.query(
     `UPDATE watchdog_config SET enabled = COALESCE(?, enabled), check_interval = COALESCE(?, check_interval),
@@ -160,7 +161,7 @@ router.post("/sysinfo", async (req, res) => {
 });
 
 // 查询主机最新系统信息
-router.get("/hosts/:hostId/sysinfo", async (req, res) => {
+router.get("/hosts/:hostId/sysinfo", authRequired, async (req, res) => {
   try {
     const latest = await db.query(
       "SELECT * FROM watchdog_sysinfo WHERE host_id = ? ORDER BY created_at DESC LIMIT 1",
@@ -201,7 +202,7 @@ router.post("/process-list", async (req, res) => {
 });
 
 // 查询主机最新进程列表
-router.get("/hosts/:hostId/process-list", async (req, res) => {
+router.get("/hosts/:hostId/process-list", authRequired, async (req, res) => {
   try {
     const latest = await db.query(
       "SELECT * FROM watchdog_process_list WHERE host_id = ? ORDER BY created_at DESC LIMIT 1",

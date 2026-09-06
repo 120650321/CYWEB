@@ -134,6 +134,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 if (watchdogRoutes) {
   app.use("/api/watchdog", watchdogRoutes);
+  app.use("/api/admin/watchdog", watchdogRoutes);
 }
 
 // 健康检查

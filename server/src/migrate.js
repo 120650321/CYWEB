@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS visit_logs (
   cols.forEach((c) => console.log(`  ${c.Field.padEnd(18)} ${c.Type}`));
 
   // watchdog 监控表
-  const watchdogSQL = `
-CREATE TABLE IF NOT EXISTS watchdog_hosts (
+  const watchdogTables = [
+    `CREATE TABLE IF NOT EXISTS watchdog_hosts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   host_id VARCHAR(64) NOT NULL UNIQUE,
   host_name VARCHAR(128) NOT NULL,
@@ -43,9 +43,8 @@ CREATE TABLE IF NOT EXISTS watchdog_hosts (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_host_status (status),
   INDEX idx_host_heartbeat (last_heartbeat)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS watchdog_config (
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS watchdog_config (
   id INT AUTO_INCREMENT PRIMARY KEY,
   host_id VARCHAR(64) NOT NULL,
   process_name VARCHAR(64) NOT NULL,
@@ -61,9 +60,8 @@ CREATE TABLE IF NOT EXISTS watchdog_config (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_wc_host (host_id),
   UNIQUE KEY uk_host_process (host_id, process_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS watchdog_event_log (
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS watchdog_event_log (
   id INT AUTO_INCREMENT PRIMARY KEY,
   host_id VARCHAR(64) NOT NULL,
   process_name VARCHAR(64) NOT NULL,
@@ -80,9 +78,8 @@ CREATE TABLE IF NOT EXISTS watchdog_event_log (
   INDEX idx_wel_type (event_type),
   INDEX idx_wel_level (level),
   INDEX idx_wel_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS watchdog_sysinfo (
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS watchdog_sysinfo (
   id INT AUTO_INCREMENT PRIMARY KEY,
   host_id VARCHAR(64) NOT NULL,
   host_name VARCHAR(128) DEFAULT '',
@@ -102,19 +99,20 @@ CREATE TABLE IF NOT EXISTS watchdog_sysinfo (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_si_host (host_id),
   INDEX idx_si_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS watchdog_process_list (
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS watchdog_process_list (
   id INT AUTO_INCREMENT PRIMARY KEY,
   host_id VARCHAR(64) NOT NULL,
   process_list LONGTEXT NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_pl_host (host_id),
   INDEX idx_pl_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-`;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  ];
 
-  await conn.query(watchdogSQL);
+  for (const tableSQL of watchdogTables) {
+    await conn.query(tableSQL);
+  }
   console.log("[ok] watchdog_hosts 表创建成功");
   console.log("[ok] watchdog_config 表创建成功");
   console.log("[ok] watchdog_event_log 表创建成功");
